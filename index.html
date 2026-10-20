@@ -1,411 +1,1005 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeoBoy Castillo Grande - Monitor Pro</title>
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- Librerías para Trayectorias -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
-    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asignación de Consultorios</title>
+  <style>
+    :root {
+      --primary-color: #0f766e;
+      --primary-hover: #0d9488;
+      --accent-color: #6366f1;
+      --bg-color: #f0fdf4;
+      --card-bg: #ffffff;
+      --text-color: #1e293b;
+      --border-color: #cbd5e1;
+      --danger-color: #ef4444;
+      --warning-color: #f59e0b;
+      --modal-header-bg: #5b51d8;
+    }
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    * {
+      box-sizing: border-box;
+    }
 
-    <style>
-        :root {
-            --primary: #2563eb;
-            --danger: #ef4444;
-            --success: #22c55e;
-            --warning: #f97316;
-            --glass: rgba(255, 255, 255, 0.95);
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-        }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+    }
 
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-serif; background: #f0f2f5; overflow: hidden; }
-        #map { height: 100vh; width: 100%; z-index: 1; }
+    .container {
+      max-width: 950px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
 
-        .search-panel {
-            position: absolute; top: 0; left: 0; bottom: 0; z-index: 1010;
-            background: var(--glass); backdrop-filter: blur(15px);
-            padding: 24px; width: 310px;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow); overflow-y: auto;
-            border-right: 1px solid rgba(0,0,0,0.1);
-        }
-        .search-panel.hidden { transform: translateX(-100%); }
+    h2 {
+      color: var(--primary-color);
+      margin-top: 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--primary-color);
+      text-align: center;
+      font-size: 1.5rem;
+    }
 
-        .toggle-btn {
-            position: absolute; top: 15px; left: 15px; z-index: 1020;
-            background: var(--primary); color: white;
-            border: none; width: 45px; height: 45px; border-radius: 12px;
-            cursor: pointer; box-shadow: var(--shadow);
-            display: flex; align-items: center; justify-content: center;
-            transition: left 0.3s ease;
-        }
-        .search-panel:not(.hidden) + .toggle-btn { left: 325px; }
+    .section-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 25px;
+    }
 
-        h2 { margin: 0 0 20px 0; font-size: 1.25rem; color: #1e293b; font-weight: 600; display: flex; align-items: center; gap: 12px; }
-        label { font-size: 0.7rem; font-weight: 700; color: #64748b; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        .search-input {
-            width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;
-            margin-bottom: 15px; font-family: inherit; font-size: 0.9rem; box-sizing: border-box;
-        }
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: var(--primary-color);
+    }
 
-        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
-        .btn-quick {
-            padding: 10px 5px; font-size: 0.65rem; border-radius: 8px; border: 1px solid #e2e8f0;
-            background: white; cursor: pointer; font-weight: 700; color: #475569;
-            transition: all 0.2s; text-align: center;
-        }
-        .btn-quick.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .btn-quick.active-anemia { background: var(--danger); color: white; border-color: var(--danger); }
+    /* Toggle Modo Fecha */
+    .mode-toggle {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      align-items: center;
+    }
 
-        .btn-filter { 
-            width: 100%; background: var(--primary); color: white; border: none; padding: 14px; 
-            border-radius: 12px; cursor: pointer; font-weight: 600; 
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
+    .mode-toggle label {
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
 
-        .stats-box {
-            margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;
-        }
-        .stat-line { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px; color: #475569; }
-        .stat-line b { color: #1e293b; }
-        .stat-danger { color: var(--danger) !important; font-weight: 700; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
 
-        .popup-container { width: 280px; max-height: 400px; overflow-y: auto; padding: 5px; }
-        .header-vivienda { 
-            padding: 10px; background: #f8fafc; border-radius: 12px; margin-bottom: 10px; border: 1px solid #e2e8f0;
-        }
-        .header-vivienda b { color: #0f172a; display: block; font-size: 0.95rem; line-height: 1.2; }
-        .header-vivienda small { color: #64748b; font-size: 0.75rem; display: block; margin-top: 4px; }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
 
-        .child-card { 
-            background: white; padding: 12px; border-radius: 12px; 
-            margin-bottom: 10px; border: 1px solid #f1f5f9;
-            position: relative; overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        }
-        .child-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #cbd5e1; }
-        .child-card.anemia-alert::before { background: var(--danger); }
-        .child-card.ina-alert { border: 2px solid var(--warning); }
+    label {
+      font-weight: 600;
+      margin-bottom: 5px;
+      font-size: 0.88rem;
+    }
 
-        .status-badge { 
-            margin-top: 8px; padding: 6px 8px; border-radius: 6px;
-            font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; gap: 6px;
-        }
-        .bg-red { background: #fef2f2; color: var(--danger); border: 1px solid #fee2e2; }
-        .bg-orange { background: #fff7ed; color: var(--warning); border: 1px solid #ffedd5; width: 100%; box-sizing: border-box; display: block !important; }
-        .bg-anemia-total { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
-        
-        .info-row { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+    input[type="date"], input[type="number"] {
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      background-color: #fff;
+    }
 
-        .contact-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .btn-contact { 
-            text-decoration: none; color: #000000 !important; padding: 8px; border-radius: 8px; 
-            text-align: center; font-size: 0.75rem; font-weight: 700; display: flex; 
-            align-items: center; justify-content: center; gap: 5px; cursor: pointer; border: none;
-        }
-        .btn-whatsapp { background: var(--success); }
-        .btn-phone { background: #3b82f6; }
-        .btn-route { background: #1e293b; color: white !important; grid-column: span 2; margin-top: 5px; }
+    /* Selectores personalizados estilo Modal */
+    .custom-select-trigger {
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background-color: #fff;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.95rem;
+      color: var(--text-color);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
 
-        /* Ocultar panel de instrucciones de ruta para no tapar el mapa */
-        .leaflet-routing-container { display: none; }
-    </style>
+    .custom-select-trigger:hover {
+      border-color: var(--accent-color);
+    }
+
+    .custom-select-trigger::after {
+      content: '▾';
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button.btn-submit {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      background-color: var(--primary-color);
+      color: white;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button.btn-submit:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-search {
+      background-color: #0284c7;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 15px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-search:hover {
+      background-color: #0369a1;
+    }
+
+    .btn-cancel {
+      background-color: #94a3b8;
+      color: white;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      display: none;
+    }
+
+    /* Tabla */
+    .table-container {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background-color: #fff;
+      display: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.92rem;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      color: var(--primary-color);
+      font-weight: 700;
+    }
+
+    tr:hover {
+      background-color: #f8fafc;
+    }
+
+    .action-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      border: none;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .btn-edit {
+      background-color: var(--warning-color);
+      color: white;
+    }
+
+    .btn-delete {
+      background-color: var(--danger-color);
+      color: white;
+    }
+
+    /* Modales emergentes */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: white;
+      width: 90%;
+      max-width: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      transform: translateY(20px);
+      transition: transform 0.2s ease;
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      background: var(--modal-header-bg);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .modal-header-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-body {
+      padding: 16px;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .modal-search-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background-color: #f8fafc;
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .modal-option-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .modal-option-item {
+      padding: 12px 16px;
+      background-color: #f8fafc;
+      border: 1px solid #f1f5f9;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 600;
+      color: #334155;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .modal-option-item:hover, .modal-option-item.selected {
+      background-color: #eef2ff;
+      border-color: #c7d2fe;
+      color: var(--modal-header-bg);
+    }
+
+    .modal-option-item::after {
+      content: '›';
+      font-size: 1.3rem;
+      color: #94a3b8;
+    }
+
+    /* Modal de Alerta / Confirmación Elegante */
+    .custom-alert-card {
+      background: white;
+      width: 90%;
+      max-width: 440px;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .custom-alert-msg {
+      font-size: 0.98rem;
+      color: #334155;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .custom-alert-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .custom-alert-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-alert-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .btn-alert-secondary {
+      background-color: #cbd5e1;
+      color: #334155;
+    }
+
+    .status-msg {
+      text-align: center;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      display: none;
+      font-weight: 600;
+    }
+
+    .status-loading { background-color: #e0f2fe; color: #0369a1; }
+    .status-success { background-color: #dcfce7; color: #15803d; }
+    .status-warning { background-color: #fef3c7; color: #b45309; }
+  </style>
 </head>
 <body>
 
-<div class="search-panel" id="sidePanel">
-    <h2><i class="fas fa-satellite-dish" style="color:var(--primary)"></i> GeoBoy Pro</h2>
-    
-    <label>Buscador (DNI / Nombres)</label>
-    <input type="text" id="mainSearch" class="search-input" placeholder="Buscar niño, madre o DNI..." oninput="applyFilters()">
+  <div class="container">
+    <h2>Asignación de Consultorios (Hoja TOPE)</h2>
 
-    <label>Filtrar por Estado</label>
-    <div class="filter-grid">
-        <button class="btn-quick" id="btn-soloAnemia" onclick="toggleFilter('soloAnemia')">NIÑOS ANÉMICOS</button>
-        <button class="btn-quick" id="btn-anemia" onclick="toggleFilter('anemia')">INAS. ANEMIA</button>
-        <button class="btn-quick" id="btn-cred" onclick="toggleFilter('cred')">INAS. CRED</button>
-        <button class="btn-quick" id="btn-vacuna" onclick="toggleFilter('vacuna')">INAS. VACUNA</button>
-        <button class="btn-quick" onclick="resetFilters()" style="background:#f1f5f9; grid-column: span 2;">LIMPIAR TODO</button>
+    <div id="statusMsg" class="status-msg"></div>
+
+    <!-- Formulario Principal -->
+    <form id="topeForm">
+      <input type="hidden" id="rowIndex" value="">
+
+      <!-- Modo de Selección de Fecha -->
+      <div class="mode-toggle">
+        <label>
+          <input type="radio" name="modoFecha" value="unica" checked onchange="toggleModoFecha()"> Fecha Única
+        </label>
+        <label>
+          <input type="radio" name="modoFecha" value="rango" onchange="toggleModoFecha()"> Rango de Fechas (Desde - Hasta)
+        </label>
+      </div>
+
+      <div class="form-grid">
+        <!-- Campo Fecha Única -->
+        <div class="form-group" id="groupFechaUnica">
+          <label for="fecha">Fecha:</label>
+          <input type="date" id="fecha">
+        </div>
+
+        <!-- Campos Rango de Fechas -->
+        <div class="form-group" id="groupFechaDesde" style="display: none;">
+          <label for="fechaDesde">Desde:</label>
+          <input type="date" id="fechaDesde">
+        </div>
+        <div class="form-group" id="groupFechaHasta" style="display: none;">
+          <label for="fechaHasta">Hasta:</label>
+          <input type="date" id="fechaHasta">
+        </div>
+
+        <!-- Consultorio con Modal -->
+        <div class="form-group">
+          <label>Consultorio:</label>
+          <div class="custom-select-trigger" id="triggerConsultorio" onclick="abrirModalConsultorio('form')">
+            Seleccione un consultorio...
+          </div>
+          <input type="hidden" id="valConsultorio">
+        </div>
+
+        <!-- Turno con Modal -->
+        <div class="form-group">
+          <label>Turno:</label>
+          <div class="custom-select-trigger" id="triggerTurno" onclick="abrirModalTurno('form')">
+            MAÑANA
+          </div>
+          <input type="hidden" id="valTurno" value="MAÑANA">
+        </div>
+
+        <!-- Cantidad -->
+        <div class="form-group">
+          <label for="cantidad">Cantidad (Tope):</label>
+          <input type="number" id="cantidad" min="1" required placeholder="Ej. 12">
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button type="submit" id="btnGuardar" class="btn-submit">Guardar Asignación</button>
+        <button type="button" id="btnCancelar" class="btn-cancel" onclick="limpiarFormulario()">Cancelar Edición</button>
+      </div>
+    </form>
+
+    <!-- Sección de Consulta e Historial de Registros -->
+    <div class="section-card">
+      <div class="section-title">Consulta e Historial de Registros</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="filtroDesde">Desde:</label>
+          <input type="date" id="filtroDesde">
+        </div>
+        <div class="form-group">
+          <label for="filtroHasta">Hasta:</label>
+          <input type="date" id="filtroHasta">
+        </div>
+        
+        <!-- Consultorio Filtro -->
+        <div class="form-group">
+          <label>Consultorio:</label>
+          <div class="custom-select-trigger" id="triggerFiltroConsultorio" onclick="abrirModalConsultorio('filtro')">
+            TODOS
+          </div>
+          <input type="hidden" id="valFiltroConsultorio" value="TODOS">
+        </div>
+
+        <!-- Turno Filtro -->
+        <div class="form-group">
+          <label>Turno:</label>
+          <div class="custom-select-trigger" id="triggerFiltroTurno" onclick="abrirModalTurno('filtro')">
+            TODOS
+          </div>
+          <input type="hidden" id="valFiltroTurno" value="TODOS">
+        </div>
+      </div>
+
+      <!-- Botón de Búsqueda -->
+      <button type="button" class="btn-search" onclick="ejecutarConsulta()">
+        🔍 Buscar Registros
+      </button>
+
+      <!-- Tabla de Registros (Oculta por defecto) -->
+      <div class="table-container" id="contenedorTabla">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Consultorio</th>
+              <th>Turno</th>
+              <th>Cantidad</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaCuerpo">
+            <tr>
+              <td colspan="5" style="text-align: center;">Haga clic en Buscar para obtener datos.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+  </div>
 
-    <label>Rango de Nacimiento</label>
-    <div style="display: flex; gap: 5px;">
-        <input type="date" id="dateStart" class="search-input" onchange="applyFilters()">
-        <input type="date" id="dateEnd" class="search-input" onchange="applyFilters()">
+  <!-- MODAL SELECTOR DE CONSULTORIO -->
+  <div class="modal-overlay" id="modalConsultorio">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <span>☰</span> Seleccionar Consultorio
+        </div>
+        <button class="modal-close" onclick="cerrarModal('modalConsultorio')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="modal-search-input" id="searchConsultorio" placeholder="Escriba para buscar..." oninput="filtrarOpcionesConsultorio()">
+        <div class="modal-option-list" id="listaOpcionesConsultorio"></div>
+      </div>
     </div>
-    
-    <button class="btn-filter" onclick="fetchData()">
-        <i class="fas fa-sync-alt"></i> CONSULTAR
-    </button>
+  </div>
 
-    <div class="stats-box">
-        <label style="margin-bottom: 10px;">Resumen Estadístico</label>
-        <div class="stat-line"><span>N° Madres:</span> <b id="stat-madres">0</b></div>
-        <div class="stat-line"><span>N° Niños:</span> <b id="stat-ninos">0</b></div>
-        <div class="stat-line"><span>N° Anémicos:</span> <b id="stat-anemicos" class="stat-danger">0</b></div>
-        <hr style="border:0; border-top:1px solid #e2e8f0; margin: 8px 0;">
-        <div class="stat-line"><span>Inas. Anemia:</span> <b id="stat-ina-anemia">0</b></div>
-        <div class="stat-line"><span>Inas. CRED:</span> <b id="stat-ina-cred">0</b></div>
-        <div class="stat-line"><span>Inas. Vacuna:</span> <b id="stat-ina-vacuna">0</b></div>
+  <!-- MODAL SELECTOR DE TURNO -->
+  <div class="modal-overlay" id="modalTurno">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <span>☰</span> Seleccionar Turno
+        </div>
+        <button class="modal-close" onclick="cerrarModal('modalTurno')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="modal-search-input" id="searchTurno" placeholder="Escriba para buscar..." oninput="filtrarOpcionesTurno()">
+        <div class="modal-option-list" id="listaOpcionesTurno"></div>
+      </div>
     </div>
-    
-    <div id="stats" style="margin-top:15px; font-size:0.7rem; text-align:center; color:#94a3b8;">
-        Esperando conexión...
+  </div>
+
+  <!-- MODAL DE ALERTA / CONFIRMACIÓN ELEGANTE -->
+  <div class="modal-overlay" id="modalAlerta">
+    <div class="custom-alert-card">
+      <div class="custom-alert-msg" id="mensajeAlertaTexto">Mensaje aquí</div>
+      <div class="custom-alert-buttons" id="mensajeAlertaBotones">
+        <button class="custom-alert-btn btn-alert-primary" onclick="cerrarAlertaCustom()">Aceptar</button>
+      </div>
     </div>
-</div>
+  </div>
 
-<button class="toggle-btn" onclick="togglePanel()"><i class="fas fa-bars"></i></button>
+  <script>
+    // =========================================================================
+    // URL DEL GOOGLE APPS SCRIPT ADMINISTRACION
+    // =========================================================================
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyWCu9LW3plqqE78CXs0nNd9fbJaVjtPyUz27cXQ7tkomBgVmrtgds3xQN7ih6--AeV/exec";
 
-<div id="map"></div>
+    let consultoriosGlobales = [];
+    let turnosGlobales = ["MAÑANA", "TARDE", "NOCHE"];
+    let registrosLocales = [];
+    let objetivoModal = 'form'; 
 
-<script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbzFJPWYyiVo1d5lJnG6LtRRkCp6pOyvfvMbApsa1GWTr02m4b2NLLvV7XyKOIyPVVcCmg/exec"; 
-    
-    const map = L.map('map', { center: [-9.2938, -75.9926], zoom: 15, zoomControl: false });
-    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}').addTo(map);
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    document.addEventListener("DOMContentLoaded", () => {
+      cargarConsultorios();
+      precargarRegistrosSilencioso();
+    });
 
-    let markersLayer = L.layerGroup().addTo(map);
-    let rawData = [];
-    let activeFilters = { anemia: false, cred: false, vacuna: false, soloAnemia: false };
-    let routingControl = null;
-
-    // --- NUEVAS FUNCIONES DE NAVEGACIÓN ---
-    function iniciarNavegacion(latDestino, lngDestino, nombreNino) {
-        if (!navigator.geolocation) {
-            alert("Tu navegador no soporta geolocalización");
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition((pos) => {
-            const latOrigen = pos.coords.latitude;
-            const lngOrigen = pos.coords.longitude;
-
-            if (routingControl) map.removeControl(routingControl);
-
-            routingControl = L.Routing.control({
-                waypoints: [L.latLng(latOrigen, lngOrigen), L.latLng(latDestino, lngDestino)],
-                language: 'es',
-                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
-                lineOptions: { styles: [{ color: '#2563eb', weight: 6 }] },
-                createMarker: function() { return null; }
-            }).addTo(map);
-
-            hablar(`Iniciando ruta hacia la vivienda de ${nombreNino}.`);
-
-            routingControl.on('routesfound', function(e) {
-                const instructions = e.routes[0].instructions;
-                if (instructions.length > 0) {
-                    hablar("En " + Math.round(instructions[0].distance) + " metros, " + instructions[0].text);
-                }
-            });
-
-        }, () => alert("Por favor, activa el GPS para navegar."));
-    }
-
-    function hablar(texto) {
-        const utterance = new SpeechSynthesisUtterance(texto);
-        utterance.lang = 'es-ES';
-        utterance.rate = 0.9;
-        window.speechSynthesis.speak(utterance);
-    }
-    // ---------------------------------------
-
-    function togglePanel() { document.getElementById('sidePanel').classList.toggle('hidden'); }
-
-    function parseDate(val) {
-        if (!val || String(val).includes("#") || String(val).trim() === "" || val === 0 || val === "0") return null;
-        if (!isNaN(val) && typeof val === 'number') return new Date((val - 25569) * 86400 * 1000);
-        let s = String(val).trim();
-        let parts = s.split(/[\/\-]/);
-        if (parts.length === 3) {
-            let d, m, a;
-            if (parts[0].length === 4) { a = parseInt(parts[0]); m = parseInt(parts[1]) - 1; d = parseInt(parts[2]); }
-            else { d = parseInt(parts[0]); m = parseInt(parts[1]) - 1; a = parseInt(parts[2]); }
-            if (a < 100) a += 2000;
-            return new Date(a, m, d, 12, 0, 0);
-        }
-        let dObj = new Date(s);
-        return isNaN(dObj.getTime()) ? null : dObj;
-    }
-
-    function calcularEdad(fechaNacStr) {
-        const f = parseDate(fechaNacStr);
-        if (!f) return "S/D";
-        const hoy = new Date();
-        let anios = hoy.getFullYear() - f.getFullYear();
-        let meses = hoy.getMonth() - f.getMonth();
-        let dias = hoy.getDate() - f.getDate();
-        if (dias < 0) { meses--; let ultDia = new Date(hoy.getFullYear(), hoy.getMonth(), 0).getDate(); dias += ultDia; }
-        if (meses < 0) { anios--; meses += 12; }
-        return `${anios > 0 ? anios + "a " : ""}${meses}m ${dias}d`;
-    }
-
-    async function fetchData() {
-        document.getElementById('stats').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
-        try {
-            const response = await fetch(URL_API);
-            rawData = await response.json();
-            applyFilters();
-        } catch (e) { document.getElementById('stats').innerText = "Error de conexión."; }
-    }
-
-    function toggleFilter(type) {
-        activeFilters[type] = !activeFilters[type];
-        const btn = document.getElementById('btn-' + type);
-        if (type === 'soloAnemia') btn.classList.toggle('active-anemia');
-        else btn.classList.toggle('active');
-        applyFilters();
-    }
-
-    function resetFilters() {
-        activeFilters = { anemia: false, cred: false, vacuna: false, soloAnemia: false };
-        document.querySelectorAll('.btn-quick').forEach(b => {
-            b.classList.remove('active');
-            b.classList.remove('active-anemia');
+    // Carga silenciosa de registros para tener la base de datos lista en memoria
+    function precargarRegistrosSilencioso() {
+      return fetch(`${SCRIPT_URL}?action=getDataTope`)
+        .then(res => res.json())
+        .then(data => {
+          registrosLocales = data || [];
+          return registrosLocales;
+        })
+        .catch(err => {
+          console.error("Precarga de registros fallida", err);
+          return [];
         });
-        document.getElementById('mainSearch').value = '';
-        document.getElementById('dateStart').value = '';
-        document.getElementById('dateEnd').value = '';
-        if (routingControl) map.removeControl(routingControl);
-        applyFilters();
     }
 
-    function applyFilters() {
-        markersLayer.clearLayers();
-        const term = document.getElementById('mainSearch').value.toLowerCase().trim();
-        const dStart = document.getElementById('dateStart').value ? new Date(document.getElementById('dateStart').value + "T00:00:00") : null;
-        const dEnd = document.getElementById('dateEnd').value ? new Date(document.getElementById('dateEnd').value + "T23:59:59") : null;
+    // Alerta personalizada elegante
+    function mostrarAlertaElegante(texto, callbackAceptar = null, textoBoton = "Aceptar") {
+      document.getElementById("mensajeAlertaTexto").innerHTML = texto;
+      const contenedorBotones = document.getElementById("mensajeAlertaBotones");
+      
+      if (callbackAceptar) {
+        contenedorBotones.innerHTML = `
+          <button class="custom-alert-btn btn-alert-secondary" onclick="cerrarAlertaCustom()">Cancelar</button>
+          <button class="custom-alert-btn btn-alert-primary" id="btnAlertaConfirmar">${textoBoton}</button>
+        `;
+        document.getElementById("btnAlertaConfirmar").onclick = () => {
+          cerrarAlertaCustom();
+          callbackAceptar();
+        };
+      } else {
+        contenedorBotones.innerHTML = `
+          <button class="custom-alert-btn btn-alert-primary" onclick="cerrarAlertaCustom()">Aceptar</button>
+        `;
+      }
+      document.getElementById("modalAlerta").classList.add("active");
+    }
 
-        const grupos = {};
-        let contNinos = 0;
-        let contAnemicos = 0;
-        let contInaAnemia = 0;
-        let contInaCred = 0;
-        let contInaVacuna = 0;
-        const setMadres = new Set();
+    function cerrarAlertaCustom() {
+      document.getElementById("modalAlerta").classList.remove("active");
+    }
 
-        rawData.forEach(item => {
-            const fNac = parseDate(item.nacimientoHijo);
-            if (dStart && fNac && fNac < dStart) return;
-            if (dEnd && fNac && fNac > dEnd) return;
+    // Alternar visibilidad entre fecha única y rango de fechas
+    function toggleModoFecha() {
+      const modo = document.querySelector('input[name="modoFecha"]:checked').value;
+      const grpUnica = document.getElementById("groupFechaUnica");
+      const grpDesde = document.getElementById("groupFechaDesde");
+      const grpHasta = document.getElementById("groupFechaHasta");
 
-            const matchSearch = !term || 
-                String(item.dniHijo).includes(term) || 
-                item.nombreHijo.toLowerCase().includes(term) || 
-                item.nombreMadre.toLowerCase().includes(term);
-            if (!matchSearch) return;
+      if (modo === "unica") {
+        grpUnica.style.display = "flex";
+        grpDesde.style.display = "none";
+        grpHasta.style.display = "none";
+      } else {
+        grpUnica.style.display = "none";
+        grpDesde.style.display = "flex";
+        grpHasta.style.display = "flex";
+      }
+    }
 
-            const esAnemicoReal = (item.anemia && String(item.anemia).trim() !== "" && String(item.anemia).trim() !== "0" && !String(item.anemia).includes("#")) || item.fechaInicioAnemia;
-
-            if (activeFilters.soloAnemia && !esAnemicoReal) return;
-            if (activeFilters.anemia && !item.citaFaltante) return;
-            if (activeFilters.cred && !item.citaCred) return; 
-            if (activeFilters.vacuna && !item.citaVacuna) return;
-
-            contNinos++;
-            setMadres.add(item.nombreMadre);
-            if (esAnemicoReal) contAnemicos++;
-            if (item.citaFaltante) contInaAnemia++;
-            if (item.citaCred) contInaCred++;
-            if (item.citaVacuna) contInaVacuna++;
-
-            if (!grupos[item.coords]) grupos[item.coords] = [];
-            grupos[item.coords].push(item);
+    // 1. Cargar Consultorios desde HOJA ADMIN
+    function cargarConsultorios() {
+      fetch(`${SCRIPT_URL}?action=getConsultorios`)
+        .then(res => res.json())
+        .then(data => {
+          consultoriosGlobales = Array.isArray(data) ? data : (data.consultorios || []);
+        })
+        .catch(() => {
+          consultoriosGlobales = ["CRED", "VACUNATORIO", "ESNI", "ODONTOLOGÍA", "PSICOLOGÍA", "NUTRICIÓN", "EVA"];
         });
-
-        document.getElementById('stat-madres').innerText = setMadres.size;
-        document.getElementById('stat-ninos').innerText = contNinos;
-        document.getElementById('stat-anemicos').innerText = contAnemicos;
-        document.getElementById('stat-ina-anemia').innerText = contInaAnemia;
-        document.getElementById('stat-ina-cred').innerText = contInaCred;
-        document.getElementById('stat-ina-vacuna').innerText = contInaVacuna;
-
-        for (const coord in grupos) {
-            const personas = grupos[coord];
-            const latlng = coord.split(",").map(Number);
-            
-            const tieneAlerta = personas.some(p => {
-                const esAnemico = (p.anemia && String(p.anemia).trim() !== "" && String(p.anemia).trim() !== "0" && !String(p.anemia).includes("#")) || p.fechaInicioAnemia;
-                return esAnemico || p.citaFaltante || p.citaCred || p.citaVacuna;
-            });
-
-            const tel = String(personas[0].celular || "").replace(/\D/g, "");
-            const waLink = `https://wa.me/51${tel}?text=Hola%20${encodeURIComponent(personas[0].nombreMadre)},%20le%20escribimos%20del%20Puesto%20de%20Salud%20Castillo%20Grande...`;
-
-            let html = `<div class="popup-container">
-                <div class="header-vivienda">
-                    <small>RESPONSABLE</small>
-                    <b>${personas[0].nombreMadre}</b>
-                    <div class="info-row"><i class="fas fa-phone"></i> Cel: ${personas[0].celular || 'S/N'}</div>
-                    <div class="info-row"><i class="fas fa-home"></i> ${personas[0].domicilio || 'S/D'}</div>
-                    
-                    <div class="contact-actions">
-                        <a href="${waLink}" target="_blank" class="btn-contact btn-whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-                        <a href="tel:${tel}" class="btn-contact btn-phone"><i class="fas fa-phone-alt"></i> Llamar</a>
-                        <button onclick="iniciarNavegacion(${latlng[0]}, ${latlng[1]}, '${personas[0].nombreHijo}')" class="btn-contact btn-route">
-                            <i class="fas fa-route"></i> ¿CÓMO LLEGAR?
-                        </button>
-                    </div>
-                </div>`;
-
-            personas.forEach(p => {
-                const esAnemicoColO = p.anemia && String(p.anemia).trim() !== "" && String(p.anemia).trim() !== "0" && !String(p.anemia).includes("#");
-                const esAnemicoHoja = p.fechaInicioAnemia !== null && p.fechaInicioAnemia !== undefined;
-                const esAnemico = esAnemicoColO || esAnemicoHoja;
-
-                let badgesHtml = "";
-                if (esAnemico) {
-                    let fInicioStr = "S/D";
-                    let fAltaStr = "S/D";
-
-                    if (esAnemicoHoja) {
-                        fInicioStr = p.fechaInicioAnemia;
-                        fAltaStr = p.fechaAltaAnemia || "S/D";
-                    } else if (esAnemicoColO) {
-                        const fDiag = parseDate(p.anemia);
-                        if (fDiag) {
-                            fInicioStr = fDiag.toLocaleDateString('es-PE');
-                            let fAlta = new Date(fDiag); 
-                            fAlta.setMonth(fAlta.getMonth() + 7);
-                            fAltaStr = fAlta.toLocaleDateString('es-PE');
-                        }
-                    }
-                    badgesHtml += `<div class="status-badge bg-red bg-anemia-total">
-                        <i class="fas fa-tint"></i> NIÑO ANÉMICO 
-                        <div style="font-size:0.65rem; margin-top:2px; font-weight:400; color:#1e293b;">
-                            <b>Inicio:</b> ${fInicioStr} | <b style="color:#166534">Alta:</b> ${fAltaStr}
-                        </div>
-                    </div>`;
-                }
-
-                if (p.citaFaltante) badgesHtml += `<div class="status-badge bg-orange"><i class="fas fa-calendar-times"></i> INASISTENTE ANEMIA<br>Cita: ${p.citaFaltante}</div>`;
-                if (p.citaCred) badgesHtml += `<div class="status-badge bg-orange" style="border-color:#3b82f6"><i class="fas fa-baby"></i> INASISTENTE CRED<br>Cita: ${p.citaCred}</div>`;
-                if (p.citaVacuna) badgesHtml += `<div class="status-badge bg-orange" style="border-color:#22c55e"><i class="fas fa-syringe"></i> INASISTENTE VACUNA<br>Cita: ${p.citaVacuna}</div>`;
-
-                html += `<div class="child-card ${esAnemico ? 'anemia-alert' : ''} ${(p.citaFaltante || p.citaCred || p.citaVacuna) ? 'ina-alert' : ''}">
-                    <span style="font-weight:600; color:#1e293b">👶 ${p.nombreHijo}</span><br>
-                    <div class="info-row">DNI: ${p.dniHijo} | ${calcularEdad(p.nacimientoHijo)}</div>
-                    ${badgesHtml}
-                </div>`;
-            });
-
-            L.marker(latlng, { icon: new L.Icon({
-                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${tieneAlerta ? 'red' : 'blue'}.png`,
-                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34]
-            })}).bindPopup(html + "</div>").addTo(markersLayer);
-        }
-        document.getElementById('stats').innerText = `${contNinos} niños visualizados.`;
     }
-    fetchData();
-</script>
+
+    // 2. Ejecutar Consulta (Mostrar Tabla y obtener datos del Backend)
+    function ejecutarConsulta() {
+      const contenedorTabla = document.getElementById("contenedorTabla");
+      contenedorTabla.style.display = "block";
+      
+      const tbody = document.getElementById("tablaCuerpo");
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Cargando datos...</td></tr>';
+
+      precargarRegistrosSilencioso().then(() => {
+        aplicarFiltrosLocales();
+      });
+    }
+
+    // Aplicar filtros a la tabla del historial
+    function aplicarFiltrosLocales() {
+      const desde = document.getElementById("filtroDesde").value;
+      const hasta = document.getElementById("filtroHasta").value;
+      const consultorio = document.getElementById("valFiltroConsultorio").value;
+      const turno = document.getElementById("valFiltroTurno").value;
+
+      let filtrados = registrosLocales.filter(reg => {
+        let fechaRegISO = normalizarFechaISO(reg.fecha);
+
+        if (desde && fechaRegISO < desde) return false;
+        if (hasta && fechaRegISO > hasta) return false;
+        if (consultorio !== "TODOS" && reg.consultorio.toUpperCase() !== consultorio.toUpperCase()) return false;
+        if (turno !== "TODOS" && reg.turno.toUpperCase() !== turno.toUpperCase()) return false;
+
+        return true;
+      });
+
+      renderizarTabla(filtrados);
+    }
+
+    function renderizarTabla(lista) {
+      const tbody = document.getElementById("tablaCuerpo");
+      tbody.innerHTML = "";
+
+      if (lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No se encontraron registros para los criterios seleccionados.</td></tr>';
+        return;
+      }
+
+      lista.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.fecha}</td>
+          <td>${row.consultorio}</td>
+          <td>${row.turno}</td>
+          <td>${row.cantidad}</td>
+          <td>
+            <button class="action-btn btn-edit" onclick="prepararEdicion(${row.rowIndex}, '${row.fecha}', '${row.consultorio}', '${row.turno}', ${row.cantidad})">Editar</button>
+            <button class="action-btn btn-delete" onclick="eliminarRegistro(${row.rowIndex})">Eliminar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 3. Guardar / Editar con Escaneo Completo de Duplicados
+    document.getElementById("topeForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const rowIndex = document.getElementById("rowIndex").value;
+      const modoFecha = document.querySelector('input[name="modoFecha"]:checked').value;
+      const consultorio = document.getElementById("valConsultorio").value;
+      const turno = document.getElementById("valTurno").value;
+      const cantidad = document.getElementById("cantidad").value;
+
+      if (!consultorio) {
+        mostrarAlertaElegante("Por favor seleccione un consultorio.");
+        return;
+      }
+
+      let fechasAGuardar = [];
+
+      if (rowIndex) {
+        fechasAGuardar.push(document.getElementById("fecha").value);
+      } else if (modoFecha === "unica") {
+        const f = document.getElementById("fecha").value;
+        if (!f) { mostrarAlertaElegante("Seleccione una fecha."); return; }
+        fechasAGuardar.push(f);
+      } else {
+        const fDesde = document.getElementById("fechaDesde").value;
+        const fHasta = document.getElementById("fechaHasta").value;
+        if (!fDesde || !fHasta) { mostrarAlertaElegante("Seleccione ambas fechas para el rango."); return; }
+        if (fDesde > fHasta) { mostrarAlertaElegante("La fecha inicial debe ser anterior o igual a la final."); return; }
+
+        let curr = new Date(fDesde + "T00:00:00");
+        let end = new Date(fHasta + "T00:00:00");
+
+        while (curr <= end) {
+          fechasAGuardar.push(curr.toISOString().split('T')[0]);
+          curr.setDate(curr.getDate() + 1);
+        }
+      }
+
+      // Sincronizar datos antes de la validación
+      mostrarMensaje("Verificando disponibilidad...", "loading");
+      await precargarRegistrosSilencioso();
+      ocultarMensaje();
+
+      // Buscamos TODAS las fechas del rango que ya están registradas
+      if (!rowIndex && registrosLocales.length > 0) {
+        let coincidencias = [];
+
+        for (let f of fechasAGuardar) {
+          let fFormateada = normalizarFechaDDMMYYYY(f);
+          let duplicado = registrosLocales.find(r => 
+            r.fecha === fFormateada && 
+            r.consultorio.toUpperCase() === consultorio.toUpperCase() && 
+            r.turno.toUpperCase() === turno.toUpperCase()
+          );
+
+          if (duplicado) {
+            coincidencias.push(duplicado);
+          }
+        }
+
+        // Si se encontraron fechas ya existentes
+        if (coincidencias.length > 0) {
+          let listaFechasTexto = coincidencias.map(c => `<b>${c.fecha}</b>`).join(", ");
+          let textoMensaje = "";
+
+          if (coincidencias.length === 1) {
+            textoMensaje = `Ya existe una programación para la fecha ${listaFechasTexto} en <b>${consultorio}</b> (${turno}).<br><br>¿Desea editar ese registro existente en lugar de duplicar?`;
+          } else {
+            textoMensaje = `Las siguientes fechas ya están registradas para <b>${consultorio}</b> (${turno}):<br><br>${listaFechasTexto}<br><br>¿Desea editar una de ellas en lugar de duplicar?`;
+          }
+
+          mostrarAlertaElegante(
+            textoMensaje,
+            () => {
+              // Cargar la primera de las coincidencias para su edición
+              const primerRegistro = coincidencias[0];
+              prepararEdicion(primerRegistro.rowIndex, primerRegistro.fecha, primerRegistro.consultorio, primerRegistro.turno, primerRegistro.cantidad);
+            },
+            "Sí, Editar"
+          );
+          return;
+        }
+      }
+
+      // Enviar registro o lote al Backend
+      mostrarMensaje("Guardando registro(s)...", "loading");
+
+      const payload = {
+        action: rowIndex ? "update" : "createBatch",
+        rowIndex: rowIndex,
+        fechas: fechasAGuardar,
+        fecha: fechasAGuardar[0],
+        consultorio: consultorio,
+        turno: turno,
+        cantidad: cantidad
+      };
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        mostrarMensaje("¡Operación completada con éxito!", "success");
+        limpiarFormulario();
+        precargarRegistrosSilencioso();
+        setTimeout(() => {
+          ocultarMensaje();
+          if (document.getElementById("contenedorTabla").style.display === "block") {
+            ejecutarConsulta();
+          }
+        }, 1200);
+      })
+      .catch(err => {
+        mostrarMensaje("Ocurrió un error al guardar.", "warning");
+        console.error(err);
+      });
+    });
+
+    // 4. Edición de Registro
+    function prepararEdicion(rowIndex, fecha, consultorio, turno, cantidad) {
+      document.getElementById("rowIndex").value = rowIndex;
+
+      document.querySelectorAll('input[name="modoFecha"]')[0].checked = true;
+      toggleModoFecha();
+
+      document.getElementById("fecha").value = normalizarFechaISO(fecha);
+
+      document.getElementById("valConsultorio").value = consultorio;
+      document.getElementById("triggerConsultorio").textContent = consultorio;
+
+      document.getElementById("valTurno").value = turno;
+      document.getElementById("triggerTurno").textContent = turno;
+
+      document.getElementById("cantidad").value = cantidad;
+
+      document.getElementById("btnGuardar").textContent = "Actualizar Asignación";
+      document.getElementById("btnCancelar").style.display = "block";
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 5. Eliminar Registro
+    function eliminarRegistro(rowIndex) {
+      mostrarAlertaElegante(
+        "¿Está seguro de que desea eliminar este registro?",
+        () => {
+          mostrarMensaje("Eliminando registro...", "loading");
+
+          fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "delete", rowIndex: rowIndex })
+          })
+          .then(() => {
+            mostrarMensaje("Registro eliminado correctamente.", "success");
+            precargarRegistrosSilencioso();
+            setTimeout(() => {
+              ocultarMensaje();
+              ejecutarConsulta();
+            }, 1200);
+          });
+        },
+        "Sí, Eliminar"
+      );
+    }
+
+    // LÓGICA DE MODALES
+    function abrirModalConsultorio(origen) {
+      objetivoModal = origen;
+      document.getElementById("searchConsultorio").value = "";
+      filtrarOpcionesConsultorio();
+      document.getElementById("modalConsultorio").classList.add("active");
+    }
+
+    function abrirModalTurno(origen) {
+      objetivoModal = origen;
+      document.getElementById("searchTurno").value = "";
+      filtrarOpcionesTurno();
+      document.getElementById("modalTurno").classList.add("active");
+    }
+
+    function cerrarModal(id) {
+      document.getElementById(id).classList.remove("active");
+    }
+
+    function filtrarOpcionesConsultorio() {
+      const q = document.getElementById("searchConsultorio").value.toLowerCase();
+      const contenedor = document.getElementById("listaOpcionesConsultorio");
+      contenedor.innerHTML = "";
+
+      let lista = [...consultoriosGlobales];
+      if (objetivoModal === 'filtro') lista.unshift("TODOS");
+
+      lista.filter(c => c.toLowerCase().includes(q)).forEach(item => {
+        const div = document.createElement("div");
+        div.className = "modal-option-item";
+        div.textContent = item;
+        div.onclick = () => {
+          if (objetivoModal === 'form') {
+            document.getElementById("valConsultorio").value = item;
+            document.getElementById("triggerConsultorio").textContent = item;
+          } else {
+            document.getElementById("valFiltroConsultorio").value = item;
+            document.getElementById("triggerFiltroConsultorio").textContent = item;
+          }
+          cerrarModal("modalConsultorio");
+        };
+        contenedor.appendChild(div);
+      });
+    }
+
+    function filtrarOpcionesTurno() {
+      const q = document.getElementById("searchTurno").value.toLowerCase();
+      const contenedor = document.getElementById("listaOpcionesTurno");
+      contenedor.innerHTML = "";
+
+      let lista = [...turnosGlobales];
+      if (objetivoModal === 'filtro') lista.unshift("TODOS");
+
+      lista.filter(t => t.toLowerCase().includes(q)).forEach(item => {
+        const div = document.createElement("div");
+        div.className = "modal-option-item";
+        div.textContent = item;
+        div.onclick = () => {
+          if (objetivoModal === 'form') {
+            document.getElementById("valTurno").value = item;
+            document.getElementById("triggerTurno").textContent = item;
+          } else {
+            document.getElementById("valFiltroTurno").value = item;
+            document.getElementById("triggerFiltroTurno").textContent = item;
+          }
+          cerrarModal("modalTurno");
+        };
+        contenedor.appendChild(div);
+      });
+    }
+
+    // Auxiliares
+    function limpiarFormulario() {
+      document.getElementById("topeForm").reset();
+      document.getElementById("rowIndex").value = "";
+      document.getElementById("valConsultorio").value = "";
+      document.getElementById("triggerConsultorio").textContent = "Seleccione un consultorio...";
+      document.getElementById("valTurno").value = "MAÑANA";
+      document.getElementById("triggerTurno").textContent = "MAÑANA";
+      document.getElementById("btnGuardar").textContent = "Guardar Asignación";
+      document.getElementById("btnCancelar").style.display = "none";
+      toggleModoFecha();
+    }
+
+    function mostrarMensaje(txt, tipo) {
+      const el = document.getElementById("statusMsg");
+      el.textContent = txt;
+      el.className = `status-msg status-${tipo}`;
+      el.style.display = "block";
+    }
+
+    function ocultarMensaje() {
+      document.getElementById("statusMsg").style.display = "none";
+    }
+
+    function normalizarFechaISO(fStr) {
+      if (!fStr) return "";
+      if (fStr.includes("/")) {
+        const p = fStr.split("/");
+        return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+      }
+      return fStr;
+    }
+
+    function normalizarFechaDDMMYYYY(fStr) {
+      if (!fStr) return "";
+      if (fStr.includes("-")) {
+        const p = fStr.split("-");
+        return `${p[2].padStart(2, '0')}/${p[1].padStart(2, '0')}/${p[0]}`;
+      }
+      return fStr;
+    }
+  </script>
 </body>
 </html>
